@@ -21,6 +21,18 @@ function fi_store_favourited_id_for_user($user_id, $post_id) {
 	update_user_option($user_id, 'fi_user_favourites', $favourited);
 }
 
+
+// delete the favourite ID
+function fi_delete_favourited_id_for_user($user_id, $post_id) {
+	$favourited = get_user_option('fi_user_favourites', $user_id);
+	if(is_array($favourited)) {
+		$favourited[] = $post_id;
+	} else {
+		$favourited = array($post_id);
+	}
+	update_user_option($user_id, 'fi_user_favourites', $favourited);
+}
+
 // increments a favourite count
 function fi_mark_post_as_favourited($post_id, $user_id) {
  
@@ -39,6 +51,24 @@ function fi_mark_post_as_favourited($post_id, $user_id) {
 	return false;
 }
 
+// decreases favourite count
+function fi_mark_post_as_unfavourited($post_id, $user_id) {
+ 
+	// retrieve the favourite count for $post_id	
+	$favourite_count = get_post_meta($post_id, '_fi_favourite_count', true);
+	if($favourite_count)
+		$favourite_count = $favourite_count - 1;
+	else
+		$favourite_count = 1;
+ 
+	if(update_post_meta($post_id, '_fi_favourite_count', $favourite_count)) {	
+		// store this post as favourited for $user_id	
+		fi_delete_favourited_id_for_user($user_id, $post_id);
+		return true;
+	}
+	return false;
+}
+
 // returns a favourite count for a post
 function fi_get_favourite_count($post_id) {
 	$favourite_count = get_post_meta($post_id, '_fi_favourite_count', true);
@@ -49,9 +79,11 @@ function fi_get_favourite_count($post_id) {
 
 // processes the ajax request for updating count
 function fi_process_favourite() {
-	if ( isset( $_POST['item_id'] ) && wp_verify_nonce($_POST['favourite_it_nonce'], 'favourite-it-nonce') ) {
+	if ( isset( $_POST['item_id'] ) && wp_verify_nonce($_POST['favourite_it_nonce'], 'favourite-it-nonce') || isset( $_POST['item_id'] ) && wp_verify_nonce($_POST['unfavourite_it_nonce'], 'unfavourite-it-nonce') ) {
 		if(fi_mark_post_as_favourited($_POST['item_id'], $_POST['user_id'])) {
 			echo 'favourited';
+		} elseif (fi_mark_post_as_unfavourited($_POST['item_id'], $_POST['user_id'])) {
+			echo 'unfavourited';
 		} else {
 			echo 'failed';
 		}
@@ -59,4 +91,4 @@ function fi_process_favourite() {
 	die();
 }
 add_action('wp_ajax_favourite_it', 'fi_process_favourite');
-?>
+add_action('wp_ajax_unfavourite_it', 'fi_process_unfavourite');

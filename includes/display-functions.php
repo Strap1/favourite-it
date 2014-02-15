@@ -40,4 +40,26 @@ function fi_display_favourite_link() {
 function fi_display_in_template() {
 	echo fi_display_favourite_link();
 }
+
+// Hook into user-profile call with function
+
+function fi_display_unfavourite_link($user_ID, $post_id ) {
+
+	$unfavourite = '';
+
+	ob_start();
+
+	if(!fi_user_has_favourited_post($user_ID, $post_id)) {
+		$unfavourite .= '<span class="unfavourited">Meeh' . $user_ID . '|' . $post_id . '</span>';
+	} else {
+		$unfavourite .= '<a href="#" class="unfavourite-it" data-post-id="' . $post_id . '" data-user-id="' . $user_ID . '">Unfavourite</a>';
+	}
+	ob_get_clean();
+
+	return $unfavourite;
+}
+
+function fi_display_unfavourite_in_template() {
+	echo fi_display_unfavourite_link();
+}
 ?>
